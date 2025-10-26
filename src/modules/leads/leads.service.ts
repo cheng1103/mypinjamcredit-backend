@@ -133,6 +133,30 @@ export class LeadsService implements OnModuleInit {
     await this.saveLeads();
     return lead;
   }
+
+  async updateLead(id: string, updateData: Partial<CreateLeadDto>): Promise<LeadRecord> {
+    const lead = this.leads.find((l) => l.id === id);
+    if (!lead) {
+      throw new BadRequestException({ errorKey: 'lead_not_found' });
+    }
+
+    // Update fields
+    Object.assign(lead, updateData);
+    lead.updatedAt = new Date();
+
+    await this.saveLeads();
+    return lead;
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    const index = this.leads.findIndex((l) => l.id === id);
+    if (index === -1) {
+      throw new BadRequestException({ errorKey: 'lead_not_found' });
+    }
+
+    this.leads.splice(index, 1);
+    await this.saveLeads();
+  }
 }
 
 

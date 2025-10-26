@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, Patch, Post, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, Patch, Post, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApplicationStatus, UserRole } from '../../common/enums';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
@@ -94,6 +94,72 @@ export class LeadsController {
   @Patch(':id/unassign')
   unassignLead(@Param('id') id: string) {
     return this.leadsService.unassignLead(id);
+  }
+
+  // Admin only - update lead data
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Patch(':id')
+  async updateLead(
+    @Param('id') id: string,
+    @Body() updateData: Partial<CreateLeadDto>,
+    @CurrentUser() user: any,
+    @Ip() ipAddress: string,
+    @Req() req: any,
+  ) {
+    const updatedLead = await this.leadsService.updateLead(id, updateData);
+
+    // Log the action
+    await this.auditLogsService.create({
+      action: AuditAction.LEAD_UPDATED,
+      userId: user.sub,
+      username: user.username,
+      resourceType: 'lead',
+      resourceId: id,
+      details: {
+        leadName: updatedLead.fullName,
+        updatedFields: Object.keys(updateData),
+      },
+      ipAddress,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return updatedLead;
+  }
+
+  // Admin only - delete lead
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Delete(':id')
+  async deleteLead(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Ip() ipAddress: string,
+    @Req() req: any,
+  ) {
+    const lead = await this.leadsService.findOne(id);
+    if (!lead) {
+      throw new Error('Lead not found');
+    }
+
+    await this.leadsService.deleteLead(id);
+
+    // Log the action
+    await this.auditLogsService.create({
+      action: AuditAction.LEAD_DELETED,
+      userId: user.sub,
+      username: user.username,
+      resourceType: 'lead',
+      resourceId: id,
+      details: {
+        leadName: lead.fullName,
+        leadPhone: lead.phone,
+      },
+      ipAddress,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return { message: 'Lead deleted successfully' };
   }
 }
 
