@@ -15,6 +15,9 @@ import { MongooseModule } from '@nestjs/mongoose';
           w: 'majority',
           serverSelectionTimeoutMS: 10000,
           socketTimeoutMS: 45000,
+          tls: true,
+          tlsAllowInvalidCertificates: false,
+          tlsAllowInvalidHostnames: false,
           connectionFactory: (connection) => {
             connection.on('connected', () => {
               console.log('✅ MongoDB connected successfully');
