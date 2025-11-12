@@ -57,26 +57,9 @@ export class LeadsService implements OnModuleInit {
       this.checkSpam(`ip:${ipAddress}`);
     }
 
-    // Check for duplicate email only if email is provided
-    if (payload.email) {
-      const normalizedEmail = payload.email.toLowerCase();
-      const emailExists = this.leads.some(
-        (lead) => lead.email && lead.email.toLowerCase() === normalizedEmail
-      );
-
-      if (emailExists) {
-        throw new BadRequestException({ errorKey: 'email_already_exists' });
-      }
-    }
-
-    // Check for duplicate phone number
-    const phoneExists = this.leads.some(
-      (lead) => lead.phone === payload.phone
-    );
-
-    if (phoneExists) {
-      throw new BadRequestException({ errorKey: 'phone_already_exists' });
-    }
+    // Note: Duplicate email and phone checks have been disabled
+    // All applications will be accepted and stored
+    // Admin team can review and handle duplicates in the backend dashboard
 
     const record: LeadRecord = {
       ...payload,
