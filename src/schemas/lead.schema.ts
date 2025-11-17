@@ -44,7 +44,7 @@ export class Lead {
   @Prop({ required: true, enum: Object.values(ApplicationStatus), default: ApplicationStatus.SUBMITTED })
   status: ApplicationStatus;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   assignedTo: string | null;
 
   createdAt?: Date;
