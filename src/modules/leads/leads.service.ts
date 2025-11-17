@@ -1,33 +1,21 @@
 import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { ApplicationStatus } from '../../common/enums';
 import { CreateLeadDto } from './dto/create-lead.dto';
-import { JsonDbService } from '../../common/database/json-db.service';
-
-export type LeadRecord = CreateLeadDto & {
-  id: string;
-  status: ApplicationStatus;
-  assignedTo: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+import { Lead, LeadDocument } from '../../schemas/lead.schema';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
-  private readonly collectionName = 'leads';
-  private leads: LeadRecord[] = [];
   private readonly submissionTracker = new Map<string, number[]>(); // IP -> timestamps
 
-  constructor(private readonly db: JsonDbService) {}
+  constructor(
+    @InjectModel(Lead.name) private leadModel: Model<LeadDocument>,
+  ) {}
 
   async onModuleInit() {
-    // Load existing data from file on startup
-    this.leads = await this.db.findAll<LeadRecord>(this.collectionName);
-    console.log(`✅ Loaded ${this.leads.length} leads from database`);
-  }
-
-  private async saveLeads() {
-    await this.db.write(this.collectionName, this.leads);
+    const count = await this.leadModel.countDocuments();
+    console.log(`✅ Loaded ${count} leads from MongoDB`);
   }
 
   private checkSpam(identifier: string): void {
@@ -46,7 +34,7 @@ export class LeadsService implements OnModuleInit {
     this.submissionTracker.set(identifier, recentTimestamps);
   }
 
-  async create(payload: CreateLeadDto, ipAddress?: string): Promise<LeadRecord> {
+  async create(payload: CreateLeadDto, ipAddress?: string): Promise<LeadDocument> {
     // Spam protection - check phone number submissions
     if (payload.phone) {
       this.checkSpam(`phone:${payload.phone}`);
@@ -61,85 +49,85 @@ export class LeadsService implements OnModuleInit {
     // All applications will be accepted and stored
     // Admin team can review and handle duplicates in the backend dashboard
 
-    const record: LeadRecord = {
+    const lead = await this.leadModel.create({
       ...payload,
       loanAmount: Number(payload.loanAmount),
-      id: randomUUID(),
       status: ApplicationStatus.SUBMITTED,
       assignedTo: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    });
 
-    this.leads.push(record);
-    await this.saveLeads();
-    return record;
-  }
-
-  findAll(): LeadRecord[] {
-    return [...this.leads];
-  }
-
-  findOne(id: string): LeadRecord | undefined {
-    return this.leads.find((lead) => lead.id === id);
-  }
-
-  async updateStatus(id: string, status: ApplicationStatus): Promise<LeadRecord> {
-    const lead = this.leads.find((l) => l.id === id);
-    if (!lead) {
-      throw new BadRequestException({ errorKey: 'lead_not_found' });
-    }
-    lead.status = status;
-    lead.updatedAt = new Date();
-    await this.saveLeads();
     return lead;
   }
 
-  async assignLead(id: string, adminId: string): Promise<LeadRecord> {
-    const lead = this.leads.find((l) => l.id === id);
+  async findAll(): Promise<LeadDocument[]> {
+    return this.leadModel.find().sort({ createdAt: -1 }).exec();
+  }
+
+  async findOne(id: string): Promise<LeadDocument | null> {
+    return this.leadModel.findById(id).exec();
+  }
+
+  async updateStatus(id: string, status: ApplicationStatus): Promise<LeadDocument> {
+    const lead = await this.leadModel.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    ).exec();
+
     if (!lead) {
       throw new BadRequestException({ errorKey: 'lead_not_found' });
     }
-    lead.assignedTo = adminId;
-    lead.updatedAt = new Date();
-    await this.saveLeads();
+
     return lead;
   }
 
-  async unassignLead(id: string): Promise<LeadRecord> {
-    const lead = this.leads.find((l) => l.id === id);
+  async assignLead(id: string, adminId: string): Promise<LeadDocument> {
+    const lead = await this.leadModel.findByIdAndUpdate(
+      id,
+      { $set: { assignedTo: adminId } },
+      { new: true }
+    ).exec();
+
     if (!lead) {
       throw new BadRequestException({ errorKey: 'lead_not_found' });
     }
-    lead.assignedTo = null;
-    lead.updatedAt = new Date();
-    await this.saveLeads();
+
     return lead;
   }
 
-  async updateLead(id: string, updateData: Partial<CreateLeadDto>): Promise<LeadRecord> {
-    const lead = this.leads.find((l) => l.id === id);
+  async unassignLead(id: string): Promise<LeadDocument> {
+    const lead = await this.leadModel.findByIdAndUpdate(
+      id,
+      { $set: { assignedTo: null } },
+      { new: true }
+    ).exec();
+
     if (!lead) {
       throw new BadRequestException({ errorKey: 'lead_not_found' });
     }
 
-    // Update fields
-    Object.assign(lead, updateData);
-    lead.updatedAt = new Date();
+    return lead;
+  }
 
-    await this.saveLeads();
+  async updateLead(id: string, updateData: Partial<CreateLeadDto>): Promise<LeadDocument> {
+    const lead = await this.leadModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    ).exec();
+
+    if (!lead) {
+      throw new BadRequestException({ errorKey: 'lead_not_found' });
+    }
+
     return lead;
   }
 
   async deleteLead(id: string): Promise<void> {
-    const index = this.leads.findIndex((l) => l.id === id);
-    if (index === -1) {
+    const result = await this.leadModel.deleteOne({ _id: id }).exec();
+
+    if (result.deletedCount === 0) {
       throw new BadRequestException({ errorKey: 'lead_not_found' });
     }
-
-    this.leads.splice(index, 1);
-    await this.saveLeads();
   }
 }
-
-

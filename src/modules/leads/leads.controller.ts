@@ -71,7 +71,7 @@ export class LeadsController {
       details: {
         oldStatus,
         newStatus: status,
-        leadName: lead.fullName,
+        leadName: lead.name,
       },
       ipAddress,
       userAgent: req.headers['user-agent'],
@@ -117,7 +117,7 @@ export class LeadsController {
       resourceType: 'lead',
       resourceId: id,
       details: {
-        leadName: updatedLead.fullName,
+        leadName: updatedLead.name,
         updatedFields: Object.keys(updateData),
       },
       ipAddress,
@@ -152,7 +152,7 @@ export class LeadsController {
       resourceType: 'lead',
       resourceId: id,
       details: {
-        leadName: lead.fullName,
+        leadName: lead.name,
         leadPhone: lead.phone,
       },
       ipAddress,

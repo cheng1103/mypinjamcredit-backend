@@ -1,22 +1,17 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { AuditLog, AuditAction } from './audit-log.entity';
-import { JsonDbService } from '../../common/database/json-db.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { AuditLog, AuditLogDocument, AuditAction } from '../../schemas/audit-log.schema';
 
 @Injectable()
 export class AuditLogsService implements OnModuleInit {
-  private readonly collectionName = 'audit-logs';
-  private auditLogs: AuditLog[] = [];
-
-  constructor(private readonly db: JsonDbService) {}
+  constructor(
+    @InjectModel(AuditLog.name) private auditLogModel: Model<AuditLogDocument>,
+  ) {}
 
   async onModuleInit() {
-    this.auditLogs = await this.db.findAll<AuditLog>(this.collectionName);
-    console.log(`✅ Loaded ${this.auditLogs.length} audit logs from database`);
-  }
-
-  private async saveAuditLogs() {
-    await this.db.write(this.collectionName, this.auditLogs);
+    const count = await this.auditLogModel.countDocuments();
+    console.log(`✅ Loaded ${count} audit logs from MongoDB`);
   }
 
   async create(data: {
@@ -28,9 +23,8 @@ export class AuditLogsService implements OnModuleInit {
     details?: Record<string, any>;
     ipAddress?: string;
     userAgent?: string;
-  }): Promise<AuditLog> {
-    const auditLog: AuditLog = {
-      id: randomUUID(),
+  }): Promise<AuditLogDocument> {
+    const auditLog = await this.auditLogModel.create({
       action: data.action,
       userId: data.userId,
       username: data.username,
@@ -39,13 +33,7 @@ export class AuditLogsService implements OnModuleInit {
       details: data.details || {},
       ipAddress: data.ipAddress,
       userAgent: data.userAgent,
-      createdAt: new Date(),
-    };
-
-    this.auditLogs.push(auditLog);
-
-    // Save to database
-    await this.saveAuditLogs();
+    });
 
     // Log to console for debugging
     console.log(`[AUDIT] ${data.username} - ${data.action} - ${data.resourceType}${data.resourceId ? ` (${data.resourceId})` : ''}`);
@@ -59,33 +47,34 @@ export class AuditLogsService implements OnModuleInit {
     resourceType?: string;
     startDate?: Date;
     endDate?: Date;
-  }): Promise<AuditLog[]> {
-    let logs = [...this.auditLogs];
+  }): Promise<AuditLogDocument[]> {
+    const query: any = {};
 
     if (filters) {
       if (filters.userId) {
-        logs = logs.filter(log => log.userId === filters.userId);
+        query.userId = filters.userId;
       }
       if (filters.action) {
-        logs = logs.filter(log => log.action === filters.action);
+        query.action = filters.action;
       }
       if (filters.resourceType) {
-        logs = logs.filter(log => log.resourceType === filters.resourceType);
+        query.resourceType = filters.resourceType;
       }
-      if (filters.startDate) {
-        logs = logs.filter(log => log.createdAt >= filters.startDate!);
-      }
-      if (filters.endDate) {
-        logs = logs.filter(log => log.createdAt <= filters.endDate!);
+      if (filters.startDate || filters.endDate) {
+        query.createdAt = {};
+        if (filters.startDate) {
+          query.createdAt.$gte = filters.startDate;
+        }
+        if (filters.endDate) {
+          query.createdAt.$lte = filters.endDate;
+        }
       }
     }
 
-    return logs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return this.auditLogModel.find(query).sort({ createdAt: -1 }).exec();
   }
 
-  async findByResourceId(resourceId: string): Promise<AuditLog[]> {
-    return this.auditLogs
-      .filter(log => log.resourceId === resourceId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  async findByResourceId(resourceId: string): Promise<AuditLogDocument[]> {
+    return this.auditLogModel.find({ resourceId }).sort({ createdAt: -1 }).exec();
   }
 }
