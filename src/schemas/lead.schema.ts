@@ -18,13 +18,13 @@ export type LeadDocument = Lead & Document;
 })
 export class Lead {
   @Prop({ required: true })
-  name: string;
+  fullName: string;
 
   @Prop({ required: true })
   phone: string;
 
-  @Prop({ required: true })
-  email: string;
+  @Prop()
+  email?: string;
 
   @Prop({ required: true })
   loanAmount: number;
@@ -36,7 +36,7 @@ export class Lead {
   occupation?: string;
 
   @Prop()
-  monthlyIncome?: string;
+  monthlyIncome?: number;
 
   @Prop()
   location?: string;
