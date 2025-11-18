@@ -17,7 +17,10 @@ export class AuthService {
     }
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
-    const { password: _, ...result } = user;
+
+    // Convert Mongoose document to plain object
+    const userObj = user.toObject();
+    const { password: _, ...result } = userObj;
     return result;
   }
 
