@@ -6,6 +6,7 @@ import { TestimonialsModule } from './modules/testimonials/testimonials.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MongoDbModule } from './common/database/mongodb.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { MongoDbModule } from './common/database/mongodb.module';
     AuthModule,
     UsersModule,
     AuditLogsModule,
+    AnalyticsModule,
   ],
   providers: [
     // 全局启用rate limiting
