@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { LocalizedExceptionFilter } from './common/filters/localized-exception.filter';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   try {
@@ -15,6 +16,9 @@ async function bootstrap() {
 
     // Security headers
     app.use(helmet());
+
+    // Cookie parser middleware
+    app.use(cookieParser());
 
     // CORS configuration - fail secure
     const origins = (process.env.FRONTEND_ORIGIN ?? '').split(',').map((value) => value.trim()).filter(Boolean);
