@@ -127,4 +127,12 @@ export class UsersService implements OnModuleInit {
       throw new NotFoundException({ errorKey: 'user_not_found' });
     }
   }
+
+  async deleteUser(userId: string): Promise<void> {
+    const result = await this.userModel.deleteOne({ _id: userId });
+
+    if (result.deletedCount === 0) {
+      throw new NotFoundException({ errorKey: 'user_not_found' });
+    }
+  }
 }
