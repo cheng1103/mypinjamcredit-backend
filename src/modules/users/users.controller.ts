@@ -92,7 +92,7 @@ export class UsersController {
     // Log the action
     await this.auditLogsService.create({
       action: AuditAction.USER_DELETED,
-      userId: user.sub,
+      userId: user.userId,
       username: user.username,
       resourceType: 'user',
       resourceId: id,

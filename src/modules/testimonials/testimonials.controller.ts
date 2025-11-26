@@ -66,7 +66,7 @@ export class TestimonialsController {
 
     await this.auditLogsService.create({
       action,
-      userId: user.sub,
+      userId: user.userId,
       username: user.username,
       resourceType: 'testimonial',
       resourceId: id,
