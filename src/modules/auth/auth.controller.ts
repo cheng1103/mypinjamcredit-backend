@@ -15,7 +15,7 @@ export class AuthController {
   async login(@Request() req: any, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(req.user);
 
-    // Set httpOnly cookie with JWT token
+    // Set httpOnly cookie with JWT token (optional - for cookie-based auth)
     res.cookie('auth_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
@@ -24,8 +24,9 @@ export class AuthController {
       path: '/',
     });
 
-    // Return user data without token (token is in cookie)
+    // Return both access_token and user data (for Bearer token auth)
     return {
+      access_token: result.access_token,
       user: result.user
     };
   }
