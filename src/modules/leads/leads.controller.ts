@@ -64,7 +64,7 @@ export class LeadsController {
     // Log the action
     await this.auditLogsService.create({
       action: AuditAction.LEAD_STATUS_CHANGED,
-      userId: user.sub,
+      userId: user.userId,
       username: user.username,
       resourceType: 'lead',
       resourceId: id,
@@ -112,7 +112,7 @@ export class LeadsController {
     // Log the action
     await this.auditLogsService.create({
       action: AuditAction.LEAD_UPDATED,
-      userId: user.sub,
+      userId: user.userId,
       username: user.username,
       resourceType: 'lead',
       resourceId: id,
@@ -147,7 +147,7 @@ export class LeadsController {
     // Log the action
     await this.auditLogsService.create({
       action: AuditAction.LEAD_DELETED,
-      userId: user.sub,
+      userId: user.userId,
       username: user.username,
       resourceType: 'lead',
       resourceId: id,
