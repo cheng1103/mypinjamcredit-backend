@@ -47,6 +47,9 @@ export class Lead {
   @Prop({ type: String, default: null })
   assignedTo: string | null;
 
+  @Prop()
+  leadSource?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -59,3 +62,4 @@ LeadSchema.index({ email: 1 });
 LeadSchema.index({ status: 1 });
 LeadSchema.index({ assignedTo: 1 });
 LeadSchema.index({ createdAt: -1 });
+LeadSchema.index({ leadSource: 1 });

@@ -16,7 +16,7 @@ export class CreateLeadDto {
 
   @IsNotEmpty()
   @IsString()
-  @Matches(/^(\+?6?01)[0-46-9]-*[0-9]{7,8}$/, {
+  @Matches(/^(\+?6?01)[0-9]\d{7,8}$/, {
     message: 'Phone number must be a valid Malaysian phone number (e.g., 012-3456789 or +6012-3456789)'
   })
   phone!: string;
@@ -57,5 +57,12 @@ export class CreateLeadDto {
   @IsString()
   @MaxLength(1000)
   message?: string;
+
+  @Trim()
+  @SanitizeHtml()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  leadSource?: string;
 }
 
