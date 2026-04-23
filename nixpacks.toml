@@ -2,7 +2,10 @@
 nixPkgs = ['nodejs_20', 'npm-9_x']
 
 [phases.install]
-cmds = ['npm ci']
+# NODE_ENV=production is set on Railway, which makes `npm ci` skip
+# devDependencies. @nestjs/cli lives there and is required by
+# `nest build`, so force it to install here.
+cmds = ['npm ci --include=dev']
 
 [phases.build]
 cmds = ['npm run build']
